@@ -1,0 +1,5 @@
+Reflection 1
+
+I incorporated several clean code principles discussed in class, such as using meaningful and descriptive naming conventions. For instance, I ensured that a variable like productID clearly represents its purpose as the identifier for a product. I also adhered to the Single Responsibility Principle (SRP) by clearly separating responsibilities across the controller, service, and repository layers. To minimize code duplication, I reused existing logic within service and repository methods. Additionally, I applied secure coding practices learned in class, such as implementing confirmation prompts for delete actions.
+
+I recognized opportunities for further improvement, including introducing input validation with annotations like @NotNull and @Size, as well as enhancing error handling by creating custom error pages. I also aim to strengthen security by adding authorization checks to restrict unauthorized access to editing or deleting endpoints.
