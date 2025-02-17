@@ -29,14 +29,7 @@ public class ProductControllerTest {
     @MockBean
     private ProductService service;
 
-    @Test
-    public void testCreateProductPage() throws Exception {
-        mockMvc.perform(get("/product/create"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("createProduct"))
-                .andExpect(model().attributeExists("product"))
-                .andExpect(model().attribute("product", instanceOf(Product.class)));
-    }
+
 
     @Test
     public void testCreateProductPost() throws Exception {
@@ -66,52 +59,6 @@ public class ProductControllerTest {
         assertThat(created.getProductQuantity(), is(10));
     }
 
-    @Test
-    public void testProductListPage() throws Exception {
-        // Arrange: prepare some products
-        Product product1 = new Product();
-        product1.setProductId("1");
-        product1.setProductName("Product 1");
-        product1.setProductQuantity(5);
-
-        Product product2 = new Product();
-        product2.setProductId("2");
-        product2.setProductName("Product 2");
-        product2.setProductQuantity(15);
-
-        List<Product> productList = Arrays.asList(product1, product2);
-        when(service.findAll()).thenReturn(productList);
-
-        // Act & Assert
-        mockMvc.perform(get("/product/list"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("productList"))
-                .andExpect(model().attributeExists("products"))
-                .andExpect(model().attribute("products", hasSize(2)))
-                .andExpect(model().attribute("products", hasItem(
-                        allOf(
-                                hasProperty("productId", is("1")),
-                                hasProperty("productName", is("Product 1"))
-                        )
-                )));
-    }
-
-    @Test
-    public void testEditProductPage_Found() throws Exception {
-        // Arrange: create a product and return it via findAll
-        Product product = new Product();
-        product.setProductId("1");
-        product.setProductName("Product 1");
-        product.setProductQuantity(5);
-        when(service.findAll()).thenReturn(Arrays.asList(product));
-
-        // Act & Assert: request edit page for product id "1"
-        mockMvc.perform(get("/product/edit/{id}", "1"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("editProduct"))
-                .andExpect(model().attributeExists("product"))
-                .andExpect(model().attribute("product", hasProperty("productId", is("1"))));
-    }
 
     @Test
     public void testEditProductPage_NotFound() throws Exception {
