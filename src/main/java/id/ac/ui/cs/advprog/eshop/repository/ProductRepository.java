@@ -27,7 +27,7 @@ public class ProductRepository {
                 product.setProductQuantity(updatedProduct.getProductQuantity());
                 return product;
             }
-        }
+}
         return null; // If product not found
     }
 
@@ -39,7 +39,7 @@ public class ProductRepository {
                 iterator.remove();
                 return true;  // Successfully deleted
             }
-        }
+}
         return false;  // Product not found
     }
 }
