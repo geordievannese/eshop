@@ -3,7 +3,7 @@ name: SonarCloud Code Analysis
 on:
   push:
     branches:
-      - main
+      - master
       - module-2-exercise 
   pull_request:
     types: [opened, synchronize, reopened]
