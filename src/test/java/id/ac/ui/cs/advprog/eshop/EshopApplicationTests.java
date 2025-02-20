@@ -12,4 +12,9 @@ class EshopApplicationTests {
         // No further logic is required.
     }
 
+    @Test
+    void testMainMethod() {
+        // This test calls the main method to improve coverage.
+        EshopApplication.main(new String[]{});
+    }
 }
