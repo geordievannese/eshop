@@ -10,6 +10,8 @@ import java.util.UUID;
 public class CarRepository {
     private List<Car> carData = new ArrayList<>();
 
+    static int id = 0;
+
     // Create a new car
     public Car create(Car car) {
         if (car.getCarId() == null) {
