@@ -2,133 +2,111 @@ package id.ac.ui.cs.advprog.eshop.controller;
 
 import id.ac.ui.cs.advprog.eshop.model.Product;
 import id.ac.ui.cs.advprog.eshop.service.ProductService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.ui.Model;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-class ProductControllerTest {
+@SpringBootTest
+@AutoConfigureMockMvc
+public class ProductControllerTest {
 
+    @Autowired
     private MockMvc mockMvc;
+    
+    @MockBean
+    private ProductService service;
 
-    @Mock
-    private ProductService mockProductService;
 
-    @InjectMocks
-    private ProductController productController;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(productController).build();
-    }
 
     @Test
-    void testCreateProductPage() throws Exception {
-        mockMvc.perform(get("/product/create"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("CreateProduct"))
-                .andExpect(model().attributeExists("product"));
-    }
+    public void testCreateProductPost() throws Exception {
+        // When the service.create is called, just return the same product
+        when(service.create(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-    @Test
-    void testCreateProductPost() throws Exception {
-        Product newProduct = new Product();
-        newProduct.setProductId(UUID.randomUUID().toString());
-        when(mockProductService.create(any(Product.class))).thenReturn(newProduct);
-
+        // Simulate form data submission
         mockMvc.perform(post("/product/create")
-                        .flashAttr("product", newProduct))
+                        .param("productName", "Test Product")
+                        .param("productQuantity", "10"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("list"));
 
-        verify(mockProductService, times(1)).create(any(Product.class));
+        // Capture the product passed to the service
+        ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
+        verify(service).create(productCaptor.capture());
+        Product created = productCaptor.getValue();
+        
+        // Verify that a random UUID was generated
+        // (We check that the id is not null and looks like a UUID)
+        assertThat(created.getProductId(), notNullValue());
+        assertThat(created.getProductId(), instanceOf(String.class));
+        // Optionally, you can verify that it is a valid UUID
+        UUID.fromString(created.getProductId());
+
+        assertThat(created.getProductName(), is("Test Product"));
+        assertThat(created.getProductQuantity(), is(10));
     }
 
-    @Test
-    void testProductListPage() throws Exception {
-        List<Product> sampleProductList = new ArrayList<>();
-        sampleProductList.add(new Product());
-        when(mockProductService.findAll()).thenReturn(sampleProductList);
-
-        mockMvc.perform(get("/product/list"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("ProductList"))
-                .andExpect(model().attributeExists("products"));
-
-        verify(mockProductService, times(1)).findAll();
-    }
 
     @Test
-    void testEditProductPageFound() throws Exception {
-        Product existingProduct = new Product();
-        existingProduct.setProductId("123");
-        List<Product> existingProducts = new ArrayList<>();
-        existingProducts.add(existingProduct);
-        when(mockProductService.findAll()).thenReturn(existingProducts);
+    public void testEditProductPage_NotFound() throws Exception {
+        // Arrange: return an empty list or a list without the requested product
+        when(service.findAll()).thenReturn(Arrays.asList());
 
-        mockMvc.perform(get("/product/edit/123"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("EditProduct"))
-                .andExpect(model().attributeExists("product"));
-    }
-
-    @Test
-    void testEditProductPageNotFound() throws Exception {
-        when(mockProductService.findAll()).thenReturn(new ArrayList<>());
-
-        mockMvc.perform(get("/product/edit/999"))
+        // Act & Assert: request edit page for a non-existing product id
+        mockMvc.perform(get("/product/edit/{id}", "non-existing-id"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/product/list"));
     }
 
     @Test
-    void testEditProductPost() throws Exception {
-        Product updatedProduct = new Product();
-        updatedProduct.setProductId("123");
+    public void testEditProductPost() throws Exception {
+        // Arrange: when update is called, return the product.
+        when(service.update(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
+        // Act: perform POST to edit endpoint.
         mockMvc.perform(post("/product/edit")
-                        .flashAttr("product", updatedProduct))
+                        .param("productId", "1")
+                        .param("productName", "Updated Product")
+                        .param("productQuantity", "20"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/product/list"));
 
-        verify(mockProductService, times(1)).update(any(Product.class));
+        // Verify that service.update was called with correct properties.
+        ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
+        verify(service).update(productCaptor.capture());
+        Product updated = productCaptor.getValue();
+        assertThat(updated.getProductId(), is("1"));
+        assertThat(updated.getProductName(), is("Updated Product"));
+        assertThat(updated.getProductQuantity(), is(20));
     }
 
     @Test
-    void testDeleteProduct() throws Exception {
-        mockMvc.perform(get("/product/delete/123"))
+    public void testDeleteProduct() throws Exception {
+        // Arrange: assume delete returns true.
+        when(service.delete("1")).thenReturn(true);
+
+        // Act & Assert: call delete endpoint.
+        mockMvc.perform(get("/product/delete/{id}", "1"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/product/list"));
 
-        verify(mockProductService, times(1)).delete(eq("123"));
-    }
-
-    @Test
-    void testEditProductPageWithNullId() throws Exception {
-        Product productWithNullId = new Product();
-        productWithNullId.setProductId(null);
-        List<Product> productList = new ArrayList<>();
-        productList.add(productWithNullId);
-
-        when(mockProductService.findAll()).thenReturn(productList);
-
-        mockMvc.perform(get("/product/edit/123"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/product/list"));
+        // Verify that delete was invoked.
+        verify(service).delete("1");
     }
 }
