@@ -22,8 +22,9 @@ public class ProductRepository implements ProductRepositoryInterface {
     }
 
     @Override
-    public void delete(String productId) {
-        productData.removeIf(product -> product.getProductId().equals(productId));
+    public boolean delete(String productId) {
+        // removeIf returns true if any product was removed
+        return productData.removeIf(product -> product.getProductId().equals(productId));
     }
 
     @Override
