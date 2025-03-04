@@ -1,4 +1,5 @@
 package id.ac.ui.cs.advprog.eshop.model;
+
 import enums.PaymentStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -6,9 +7,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.HashMap;
 
-
-    class PaymentTest {
-        private HashMap<String, String> validPaymentData;
+class PaymentTest {
+    private HashMap<String, String> validPaymentData;
 
     @BeforeEach
     void setUp() {
@@ -18,12 +18,13 @@ import java.util.HashMap;
 
     @Test
     void testPaymentConstructorWithValidArguments() {
+        // "Bank Transfer" is now accepted because the enum normalizes the input.
         assertDoesNotThrow(() -> new Payment("1", "Bank Transfer", PaymentStatus.SUCCESS.name(), validPaymentData));
     }
 
     @Test
     void testPaymentConstructorWithInvalidStatus() {
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             new Payment("1", "Bank Transfer", "INVALID_STATUS", validPaymentData);
         });
     }
@@ -31,7 +32,7 @@ import java.util.HashMap;
     @Test
     void testPaymentConstructorWithEmptyPaymentData() {
         HashMap<String, String> emptyData = new HashMap<>();
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             new Payment("1", "Bank Transfer", PaymentStatus.SUCCESS.name(), emptyData);
         });
     }
@@ -46,7 +47,7 @@ import java.util.HashMap;
     @Test
     void testSetStatusWithInvalidStatus() {
         Payment payment = new Payment("1", "Bank Transfer", PaymentStatus.SUCCESS.name(), validPaymentData);
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             payment.setStatus("INVALID_STATUS");
         });
     }

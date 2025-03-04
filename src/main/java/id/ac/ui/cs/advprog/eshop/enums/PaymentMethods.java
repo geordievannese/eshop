@@ -8,13 +8,16 @@ public enum PaymentMethods {
     BANKTRANSFER("BANKTRANSFER");
 
     private final String value;
+
     private PaymentMethods(String value) {
         this.value = value;
     }
 
     public static boolean contains(String param) {
-        for (PaymentMethods paymentMethods : PaymentMethods.values()) {
-            if (paymentMethods.name().equals(param)) {
+        // Normalize the parameter: remove spaces and convert to uppercase.
+        String normalizedParam = param.replaceAll("\\s+", "").toUpperCase();
+        for (PaymentMethods paymentMethod : PaymentMethods.values()) {
+            if (paymentMethod.name().equals(normalizedParam)) {
                 return true;
             }
         }
