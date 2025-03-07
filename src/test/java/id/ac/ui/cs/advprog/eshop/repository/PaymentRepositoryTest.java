@@ -35,7 +35,16 @@ class PaymentRepositoryTest {
 
     @Test
     void testGetPaymentByIdNotFound() {
+        // Repository is empty; should return null immediately
         Payment foundPayment = paymentRepository.getPaymentById("nonexistent");
+        assertNull(foundPayment);
+    }
+
+    @Test
+    void testGetPaymentByIdWrongId() {
+        // Repository has one payment, but we're searching for a different ID
+        paymentRepository.add(payment);
+        Payment foundPayment = paymentRepository.getPaymentById("2");
         assertNull(foundPayment);
     }
 
