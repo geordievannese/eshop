@@ -1,4 +1,5 @@
 package id.ac.ui.cs.advprog.eshop.service;
+
 import enums.PaymentMethods;
 import enums.PaymentStatus;
 import id.ac.ui.cs.advprog.eshop.model.Payment;
@@ -12,22 +13,31 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+
 @ExtendWith(MockitoExtension.class)
 class PaymentServiceTest {
+
     @InjectMocks
     PaymentServiceImpl paymentService;
+
     @Mock
     PaymentRepository paymentRepository;
+
     @Mock
     OrderRepository orderRepository;
+
     List<Payment> payments;
-    List<Order> orders = new ArrayList<>();
+    List<Order> orders;
+
     @BeforeEach
     void initialize() {
         List<Product> productsList = createProductsList();
@@ -57,32 +67,44 @@ class PaymentServiceTest {
     }
 
     private void addPayment(String orderId, String paymentMethod, String bankNameOrVoucher, String referenceCode) {
-        HashMap<String, String> paymentData = new HashMap<>();
+        Map<String, String> paymentData = new HashMap<>();
         if (paymentMethod.equals(PaymentMethods.BANKTRANSFER.getValue())) {
             paymentData.put("bankName", bankNameOrVoucher);
             paymentData.put("referenceCode", referenceCode);
         } else if (paymentMethod.equals(PaymentMethods.VOUCHER.getValue())) {
             paymentData.put("voucherCode", bankNameOrVoucher);
         }
-        Payment payment = new Payment(orderId, paymentMethod, paymentData);
+        Payment payment = new Payment(orderId, paymentMethod, (HashMap<String, String>) paymentData);
+
         payments.add(payment);
     }
+
     @Test
     void testPaymentAddition() {
         Payment expectedPayment = payments.get(1);
         Order relatedOrder = orders.get(1);
+
         when(paymentRepository.add(any(Payment.class))).thenReturn(expectedPayment);
-        Payment actualPayment = paymentService.addPayment(relatedOrder, expectedPayment.getMethod(), expectedPayment.getPaymentData());
+
+        Payment actualPayment = paymentService.addPayment(
+                relatedOrder,
+                expectedPayment.getMethod(),
+                expectedPayment.getPaymentData()
+        );
+
         verify(paymentRepository, times(1)).add(any(Payment.class));
         assertEquals(expectedPayment.getId(), actualPayment.getId());
         assertEquals(expectedPayment.getMethod(), actualPayment.getMethod());
         assertEquals(expectedPayment.getPaymentData(), actualPayment.getPaymentData());
     }
+
     @Test
     void shouldRetrievePaymentByIdWhenFound() {
         Payment expectedPayment = payments.get(1);
         when(paymentRepository.getPaymentById(expectedPayment.getId())).thenReturn(expectedPayment);
+
         Payment actualPayment = paymentService.getPayment(expectedPayment.getId());
+
         verify(paymentRepository, times(1)).getPaymentById(expectedPayment.getId());
         assertEquals(expectedPayment.getId(), actualPayment.getId());
     }
@@ -91,9 +113,11 @@ class PaymentServiceTest {
     void shouldThrowExceptionWhenPaymentNotFoundById() {
         String invalidPaymentId = "invalid-id";
         when(paymentRepository.getPaymentById(invalidPaymentId)).thenThrow(NoSuchElementException.class);
+
         assertThrows(NoSuchElementException.class, () -> paymentService.getPayment(invalidPaymentId));
         verify(paymentRepository, times(1)).getPaymentById(invalidPaymentId);
     }
+
     @Test
     void shouldRetrieveAllPaymentsSuccessfully() {
         when(paymentRepository.getAllPayments()).thenReturn(payments);
@@ -103,6 +127,7 @@ class PaymentServiceTest {
         assertEquals(payments.size(), retrievedPayments.size());
         assertTrue(retrievedPayments.containsAll(payments));
     }
+
     @Test
     void shouldReturnEmptyListWhenNoPaymentsExist() {
         List<Payment> emptyPaymentsList = new ArrayList<>();
@@ -113,6 +138,7 @@ class PaymentServiceTest {
         assertTrue(result.isEmpty());
         verify(paymentRepository, times(1)).getAllPayments();
     }
+
     @Test
     void shouldThrowExceptionWhenSettingInvalidPaymentStatus() {
         Payment payment = payments.get(1);
@@ -120,5 +146,37 @@ class PaymentServiceTest {
 
         // Verify setting an invalid status throws IllegalArgumentException
         assertThrows(IllegalArgumentException.class, () -> paymentService.setStatus(payment, invalidStatus));
+    }
+
+    // -----------------------------------------------------------------------
+    // NEW TESTS BELOW to cover pay(...) and setStatus(...) valid path
+    // -----------------------------------------------------------------------
+
+    @Test
+    void testPayMethod() {
+        // This covers the pay(Payment, Order) method in PaymentServiceImpl
+        Payment payment = payments.get(0);
+        Order order = orders.get(0);
+
+        when(paymentRepository.add(any(Payment.class))).thenReturn(payment);
+
+        Payment result = paymentService.pay(payment, order);
+
+        verify(paymentRepository, times(1)).add(any(Payment.class));
+        assertNotNull(result);
+        assertEquals(payment, result, "Returned payment should match the mocked repository response");
+    }
+
+    @Test
+    void shouldSetValidPaymentStatusSuccessfully() {
+        // This covers the happy path of setStatus(Payment, String)
+        Payment payment = payments.get(0);
+        String validStatus = PaymentStatus.SUCCESS.name(); // e.g. "SUCCESS"
+
+        Payment updatedPayment = paymentService.setStatus(payment, validStatus);
+
+        // No exception should be thrown; the status should be updated
+        assertNotNull(updatedPayment);
+        assertEquals(validStatus, updatedPayment.getStatus());
     }
 }
