@@ -37,6 +37,14 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentRepository.getAllPayments();
     }
 
+    // What is the code smell and how it will affect code maintainability.
+    // orderRepository.save(orderRepository.findById(payment.getId()));
+    // Possible NullPointerException: If findById() returns an empty result, save() will throw an error.
+
+    //Refactoring steps that you suggest.
+    //Use Optional.ifPresent() to safely update the order only if it exists.
+
+
     @Override
     public Payment setStatus(Payment payment, String status) {
         payment.setStatus(status);
@@ -45,48 +53,29 @@ public class PaymentServiceImpl implements PaymentService {
         orderRepository.save(orderRepository.findById(payment.getId()));
         return payment;
     }
-
     @Override
     public Payment pay(Payment payment, Order order) {
-        Payment savedPayment;
-
         if (payment.getMethod().equals(PaymentMethods.VOUCHER.getValue())) {
-            // VOUCHER path
+            // Validate voucher
             String voucherCode = payment.getPaymentData().get("voucherCode");
-            if (voucherCode.length() != 16) {
-                savedPayment = setStatus(payment, "REJECTED");
-                return savedPayment;
+            if (voucherCode == null || voucherCode.length() != 16 || !voucherCode.startsWith("ESHOP")) {
+                return setStatus(payment, "REJECTED");
             }
-            if (!voucherCode.startsWith("ESHOP")) {
-                savedPayment = setStatus(payment, "REJECTED");
-                return savedPayment;
-            }
-            // Count digits
-            int digitCount = 0;
-            for (int i = 0; i < voucherCode.length(); i++) {
-                if (Character.isDigit(voucherCode.charAt(i))) {
-                    digitCount++;
-                }
-            }
-            if (digitCount != 8) {
-                savedPayment = setStatus(payment, "REJECTED");
-                return savedPayment;
-            }
-            // If we pass all checks, success
-            savedPayment = setStatus(payment, "SUCCESS");
-            return savedPayment;
 
-        } else {
-            // BANK TRANSFER or other method
-            String bankName = payment.getPaymentData().get("bankName");
-            String referenceCode = payment.getPaymentData().get("referenceCode");
-            if (bankName == null || bankName.isEmpty() ||
-                    referenceCode == null || referenceCode.isEmpty()) {
-                savedPayment = setStatus(payment, "REJECTED");
-            } else {
-                savedPayment = setStatus(payment, "SUCCESS");
+            // Count digits in voucher code
+            long digitCount = voucherCode.chars().filter(Character::isDigit).count();
+            if (digitCount != 8) {
+                return setStatus(payment, "REJECTED");
             }
+
+            return setStatus(payment, "SUCCESS");
         }
-        return savedPayment;
+
+        // BANK TRANSFER or other method
+        String bankName = payment.getPaymentData().get("bankName");
+        String referenceCode = payment.getPaymentData().get("referenceCode");
+
+        return setStatus(payment, (bankName == null || bankName.isEmpty() || referenceCode == null || referenceCode.isEmpty())
+                ? "REJECTED" : "SUCCESS");
     }
 }
